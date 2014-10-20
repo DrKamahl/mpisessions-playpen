@@ -9,6 +9,26 @@ from bottle import get, request, response, route, run, static_file
 
 import playpen
 
+# CROSS-ORIGIN RESOURCE SHARING
+# Allows this server to be used remotely by frontend servers (via HTML/JS)
+
+def cors(method=["GET", "POST", "OPTIONS"]):
+    def enable_cors(wrappee):
+        def wrapper(*args, **kwargs):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = ", ".join(method)
+            response.headers["Access-Control-Allow-Headers"] = "Origin, Accept, Content-Type"
+
+            if request.method != "OPTIONS":
+                return wrappee(*args, **kwargs)
+
+        return wrapper
+    return enable_cors
+
+enable_post_cors = cors(method=("POST", "OPTIONS"))
+enable_get_cors = cors(method=("GET", "OPTIONS"))
+
+
 @get("/")
 def serve_index():
     response = static_file("web.html", root="static")
@@ -26,6 +46,7 @@ def serve_index():
     return response
 
 @get("/<path:path>")
+@enable_get_cors
 def serve_static(path):
     return static_file(path, root="static")
 
@@ -33,17 +54,6 @@ def serve_static(path):
 def execute(command, arguments, code):
     print("running:", command, arguments, file=sys.stderr, flush=True)
     return playpen.execute(command, arguments, code)
-
-def enable_post_cors(wrappee):
-    def wrapper(*args, **kwargs):
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Origin, Accept, Content-Type"
-
-        if request.method != "OPTIONS":
-            return wrappee(*args, **kwargs)
-
-    return wrapper
 
 try:
     SEPI_JAR = path.abspath(sys.argv[1])
