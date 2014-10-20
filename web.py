@@ -5,7 +5,7 @@ import os
 import sys
 
 from os import path
-from bottle import get, request, response, route, run, static_file
+from bottle import get, request, response, route, run
 
 import playpen
 
@@ -29,27 +29,6 @@ enable_post_cors = cors(method=("POST", "OPTIONS"))
 enable_get_cors = cors(method=("GET", "OPTIONS"))
 
 
-@get("/")
-def serve_index():
-    response = static_file("web.html", root="static")
-
-    # XSS protection is a misfeature unleashed upon the world by Internet
-    # Explorer 8. It uses ill conceived heuristics to block or mangle HTTP
-    # requests in an attempt to prevent cross-site scripting exploits. It's yet
-    # another idea from the "enumerating badness" school of security theater.
-    #
-    # Rust and JavaScript are both languages using a C style syntax, and GET
-    # queries containing Rust snippets end up being classified as cross-site
-    # scripting attacks. Luckily, there's a header for turning off this bug.
-    response.set_header("X-XSS-Protection", "0")
-
-    return response
-
-@get("/<path:path>")
-@enable_get_cors
-def serve_static(path):
-    return static_file(path, root="static")
-
 @functools.lru_cache(maxsize=256)
 def execute(command, arguments, code):
     print("running:", command, arguments, file=sys.stderr, flush=True)
@@ -69,21 +48,6 @@ PREFIX = path.join(path.abspath(sys.path[0]), 'bin')
 def simple_exec(command, args):
     out, _ = execute(command, args, request.json["code"])
     return {"result": out.replace(b"\xff", b"", 1).decode(errors="replace")}
-
-def is_valid(d, f):
-    return path.isfile(path.join(d, f)) and not f.endswith("~")
-    
-def list_files(d):
-    files = [f for f in os.listdir(d) if is_valid(d, f)]
-    files.sort()
-    return files
-
-SAMPLES_DIR = path.join("static", "sample")
-
-@route("/samples.json", method=["POST", "OPTIONS"])
-@enable_post_cors
-def list_samples():
-    return {"result": list_files(SAMPLES_DIR)}
 
 RUN = path.join(PREFIX, "run.sh")
 @route("/run.json", method=["POST", "OPTIONS"])
