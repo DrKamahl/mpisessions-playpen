@@ -35,9 +35,9 @@ def execute(command, arguments, code):
     return playpen.execute(command, arguments, code)
 
 try:
-    SEPI_JAR = path.abspath(sys.argv[1])
+    MPISESSIONS_JAR = path.abspath(sys.argv[1])
 except IndexError:
-    print("Usage: web.py SEPI_JAR", file=sys.stderr)
+    print("Usage: web.py MPISESSIONS_JAR", file=sys.stderr)
     sys.exit(255)
 
 PREFIX = path.join(path.abspath(sys.path[0]), 'bin')
@@ -53,7 +53,7 @@ RUN = path.join(PREFIX, "run.sh")
 @route("/run.json", method=["POST", "OPTIONS"])
 @enable_post_cors
 def scribble():
-    return simple_exec(RUN, (SEPI_JAR,))
+    return simple_exec(RUN, (MPISESSIONS_JAR,))
 
 os.chdir(sys.path[0])
 run(host='0.0.0.0', port=55001, server='cherrypy')
